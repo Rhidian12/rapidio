@@ -26,5 +26,11 @@
     <ClInclude Include="Win32Handle.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Win32Call.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PathUtils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

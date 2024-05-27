@@ -1,4 +1,7 @@
 #pragma once
+#ifdef _WIN32
+
+#include "Win32Call.hpp"
 
 #include <functional>
 #include <string>
@@ -9,13 +12,11 @@
 #	include <iostream>
 #endif // RAPIDIO_USE_EXCEPTIONS
 
-#ifdef _WIN32
-#	pragma warning ( push )
-#	pragma warning ( disable : 4005 ) /* warning C4005: 'APIENTRY': macro redefinition */ 
-#		define WIN32_LEAN_AND_MEAN
-#		include <Windows.h>
-#	pragma warning ( pop )
-#endif // _WIN32
+#pragma warning ( push )
+#pragma warning ( disable : 4005 ) /* warning C4005: 'APIENTRY': macro redefinition */ 
+#	define WIN32_LEAN_AND_MEAN
+#	include <Windows.h>
+#pragma warning ( pop )
 
 
 #define RAPIDIO_USE_EXCEPTIONS
@@ -173,3 +174,5 @@ namespace rapidio
 
 	} // inline namespace Win32Utils
 } // namespace rapidio
+
+#endif // _WIN32
