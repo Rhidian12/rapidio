@@ -202,7 +202,7 @@ namespace rapidio
 		#ifdef _WIN32
 		constexpr DWORD ReadOnlyAccess = PAGE_READONLY;
 		constexpr DWORD ReadWriteAccess = PAGE_READWRITE;
-		const DWORD Size{ BytesToRead.value_or(0) };
+		const DWORD Size{ static_cast<DWORD>(BytesToRead.value_or(0)) };
 
 		FileMappingHandle = CALL_WIN32_RV
 		(
@@ -220,7 +220,7 @@ namespace rapidio
 		#endif // _WIN32
 	}
 
-	bool FileView::CreateMapViewOfFile(const FileAccessMode AccessMode, const std::optional<size_t>& BytesToRead)
+	bool FileView::CreateMapViewOfFile(const FileAccessMode AccessMode, const std::optional<size_t>&)
 	{
 		#ifdef _WIN32
 		constexpr DWORD ReadOnlyAccess = FILE_MAP_READ;
