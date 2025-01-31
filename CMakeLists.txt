@@ -20,15 +20,6 @@ else()
 	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 endif()
 
-
-# 
-# if (MSVC)
-#     add_compile_options(/W4 /WX)
-#     # set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-# else()
-#     add_compile_options(-Wall -Wextra -Werror -O3)
-# endif()
-
 set(DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/rapidio/data")
 set(DESTINATION_COPY "${CMAKE_BINARY_DIR}/data")
 

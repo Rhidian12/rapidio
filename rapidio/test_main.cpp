@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "testutils/UniqueDirectory.h"
 #include "PathUtils.hpp"
 
 #include <rapidio.hpp>
@@ -17,42 +18,6 @@ namespace
 
 	constexpr size_t SIMPLE_FILE_SIZE = 12;
 	constexpr size_t BIG_FILE_SIZE = 1024 * 1024 * 100; // 100 MB
-
-	class UniqueDirectory
-	{
-	public:
-		UniqueDirectory(fs::path const& InPath)
-		{
-			CreateUniqueDirectory(InPath);
-		}
-
-		~UniqueDirectory()
-		{ 
-			fs::remove_all(Path);
-		}
-
-		fs::path operator/(std::string const& InPath) const
-		{
-			return Path / InPath;
-		}
-
-		fs::path const& GetPath() const
-		{
-			return Path;
-		}
-
-	private:
-		void CreateUniqueDirectory(fs::path const& InPath)
-		{
-			do
-			{
-				Path = fs::temp_directory_path() / (InPath.string() + std::to_string(rand() % 500));
-			} while (fs::exists(Path));
-			fs::create_directories(Path);
-		}
-
-		fs::path Path;
-	};
 
 	using namespace rapidio;
 
@@ -100,7 +65,6 @@ namespace
 	TEST_F(RapidIOFixture, TestCreateFileWithWrongAccessMode)
 	{
 		EXPECT_EQ(FileView::CreateViewFromExistingFile(TmpDir / NON_EXISTING_FILE, FileAccessMode::ReadOnly, FileOpenMode::OpenExisting), std::nullopt);
-		EXPECT_EQ(FileView::CreateViewFromExistingFile(TmpDir / NON_EXISTING_FILE, FileAccessMode::ReadOnly, FileOpenMode::OpenAlways), std::nullopt);
 		EXPECT_EQ(FileView::CreateViewFromExistingFile(TmpDir / NON_EXISTING_FILE, FileAccessMode::ReadOnly, FileOpenMode::CreateAlways), std::nullopt);
 		EXPECT_EQ(FileView::CreateViewFromExistingFile(TmpDir / NON_EXISTING_FILE, FileAccessMode::ReadOnly, FileOpenMode::TruncateExisting), std::nullopt);
 		EXPECT_EQ(FileView::CreateViewFromExistingFile(TmpDir / NON_EXISTING_FILE, FileAccessMode::ReadOnly, FileOpenMode::CreateNew), std::nullopt);

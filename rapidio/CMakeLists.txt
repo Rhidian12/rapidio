@@ -17,7 +17,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(rapidioTests main.cpp)
+add_executable(rapidioTests "test_main.cpp")
 target_link_libraries(rapidioTests PRIVATE gtest_main)
 add_test(NAME rapidio_test COMMAND example)
 
@@ -29,6 +29,11 @@ add_library(rapidio INTERFACE)
 target_include_directories(rapidio INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_link_libraries(rapidioTests PRIVATE rapidio)
+
+##################################
+# RapidIO Performance Tests
+
+add_executable(rapidioPerformance "profile_main.cpp")
 
 ##################################
 # Copying /data files to build
