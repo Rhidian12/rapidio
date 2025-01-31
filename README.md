@@ -45,6 +45,14 @@ int main()
 }
 ```
 
+## Performance
+You can find the (simple) benchmarks in the repository, run on a desktop with 32GB RAM, and AMD Ryzen 9 5900X 12-Core Processor @ 3.70 GHz
+
+- RapidIO writing 100 MB to a new file (on average over 100 iterations): 60 milliseconds
+- STL writing 100 MB to a new file (on average over 100 iterations): 226 milliseconds (~376% slower than RapidIO)
+- RapidIO reading 100 MB of an existing file (on average over 100 iterations): 39 milliseconds
+- STL reading 100 MB of an existing file (on average over 100 iterations): 833 milliseconds (~2135% slower than RapidIO)
+
 ## Limitations
 - No Linux support (hopefully to be added in the future)
 - Filemappings are re-mapped to the entire file when re-allocated (be less lazy in the future and linearly grow the filemapping size)
