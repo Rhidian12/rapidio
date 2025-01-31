@@ -1,2 +1,50 @@
 # rapidio
-An easy-to-use C++ header-only memory-mapping library
+An easy-to-use C++ Win32 header-only memory-mapping library
+
+## Quick Start
+### Creating a new file
+To create a new file, call `rapidio::FileView::CreateViewForNewFile()`. You can then write to that file view by passing a `std::string` to `view.Write()`
+Note that `CreateViewForNewFile()` and `CreateViewFromExistingFile()` return a `std::optional`, and will return `std::nullopt` if the construction of the file view fails. Any errors are logged to STDERR.
+```cpp
+#include <rapidio.hpp>
+#include <string>
+
+int main()
+{
+  using namespace rapidio;
+
+  // Not necessary, but we can provide an initial size to our FileView making it already create a file of that size
+  size_t wantedFileSize = 12; // Hello World!
+
+  FileView fileView = FileView::CreateViewForNewFile("somefile.txt", wantedFileSize).value();
+  fileView.Write("Hello World!");
+
+  fileView.Write("We can easily write more data");
+  // Done!
+}
+```
+
+### Accessing an existing file
+To access an existing file, call `rapidio::FileView::CreateViewFromExistingFile()`. You must select either ReadWrite or ReadOnly access.
+```cpp
+#include <rapidio.hpp>
+#include <string>
+
+int main()
+{
+  using namespace rapidio;
+
+  FileView fileView = FileView::CreateViewFromExistingFile("somefile.txt", FileAccessMode::ReadOnly, FileOpenMode::OpenExisting).value();
+  std::string helloWorld = fileView.Read(12);
+  // Filepointer has moved 12 bytes
+  std::string nextData = fileView.Read(24);
+  // We can go back to the start of the file by calling Seek()
+  fileView.Seek(0);
+  std::string helloWorldAgain = fileView.Read(12);
+  // Done!
+}
+```
+
+## Limitations
+- No Linux support (hopefully to be added in the future)
+- Filemappings are re-mapped to the entire file when re-allocated (be less lazy in the future and linearly grow the filemapping size)
