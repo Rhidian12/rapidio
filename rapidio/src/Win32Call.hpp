@@ -1,14 +1,7 @@
 #pragma once
 #ifdef _WIN32
 
-#define RAPIDIO_USE_EXCEPTIONS
-
-#ifdef RAPIDIO_USE_EXCEPTIONS
-#	include <exception>
-#else 
-#	include <iostream>
-#endif // RAPIDIO_USE_EXCEPTIONS
-
+#include <iostream>
 #include <string_view>
 #include <sstream>
 
@@ -18,14 +11,6 @@ namespace rapidio
 {
 	inline namespace Win32Utils
 	{
-		#ifdef RAPIDIO_USE_EXCEPTIONS
-		class Win32CallFailed final : public std::exception
-		{
-		public:
-			Win32CallFailed(const char* Message) : std::exception(Message) {}
-		};
-		#endif // RAPIDIO_USE_EXCEPTIONS
-
 		class Win32APICallInfo final
 		{
 		public:
@@ -85,13 +70,9 @@ namespace rapidio
 			FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, Result, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char*)&Buffer, 0, nullptr);
 			std::ostringstream Stream;
 			Stream << "[" << File << ", " << Line << "] Win32 API Call Error: " << Buffer << "\n";
-			LocalFree(Buffer); // make sure to free the buffer before throwing
+			LocalFree(Buffer); // make sure to free the buffer
 
-			#ifdef RAPIDIO_USE_EXCEPTIONS
-			throw Win32CallFailed(Stream.str().c_str());
-			#else
 			std::cerr << Stream.str();
-			#endif // RAPIDIO_USE_EXCEPTIONS
 		}
 
 		template<typename Func>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string_view>
+#include <filesystem>
 
 #ifdef _WIN32
 #	include "Win32Call.hpp"
@@ -12,10 +12,10 @@ namespace rapidio
 {
 	inline namespace PathUtils
 	{
-		bool DoesFileExist(const std::string_view Filepath)
+		bool DoesFileExist(const std::filesystem::path & Filepath)
 		{
 			#ifdef _WIN32
-			const DWORD Attributes = CALL_WIN32_RV(GetFileAttributesA(Filepath.data()));
+			const DWORD Attributes = CALL_WIN32_RV_IGNORE_ERROR(GetFileAttributesA(Filepath.string().c_str()), ERROR_FILE_NOT_FOUND);
 
 			return Attributes != INVALID_FILE_ATTRIBUTES && !(Attributes & FILE_ATTRIBUTE_DIRECTORY);
 			#endif // _WIN32
