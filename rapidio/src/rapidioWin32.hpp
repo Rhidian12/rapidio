@@ -305,7 +305,7 @@ namespace rapidio
 	bool FileView::GetFilesize()
 	{
 		LARGE_INTEGER filesize;
-		const BOOL Ret{ CALL_WIN32_RV(GetFileSizeEx(m_fileHandle, &filesize)) };
+		const BOOL Ret{ CALL_WIN32_RV(GetFileSizeEx(static_cast<void*>(m_fileHandle), &filesize)) };
 		m_filesize = static_cast<size_t>(filesize.QuadPart);
 		return Ret != 0;
 	}
@@ -326,7 +326,7 @@ namespace rapidio
 		(
 			CreateFileMappingA
 			(
-				m_fileHandle,
+				static_cast<void*>(m_fileHandle),
 				nullptr,
 				m_accessMode == FileAccessMode::ReadOnly ? PAGE_READONLY : PAGE_READWRITE,
 				hiWord, // If 'size' is 0, we read the entire file
@@ -372,7 +372,7 @@ namespace rapidio
 		(
 			MapViewOfFile
 			(
-				m_fileMappingHandle,
+				static_cast<void*>(m_fileMappingHandle),
 				m_accessMode == FileAccessMode::ReadOnly ? FILE_MAP_READ : FILE_MAP_WRITE,
 				0,
 				0,

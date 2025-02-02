@@ -40,7 +40,11 @@ namespace rapidio
 			void* const Get();
 			const void* const Get() const;
 
-			operator void* () const;
+			explicit operator void* () const;
+			bool operator==(const Win32Handle & other) const noexcept;
+			bool operator!=(const Win32Handle & other) const noexcept;
+			bool operator==(void* other) const noexcept;
+			bool operator!=(void* other) const noexcept;
 
 			void Release();
 
@@ -122,6 +126,26 @@ namespace rapidio
 		Win32Handle::operator void* () const
 		{
 			return Handle;
+		}
+
+		bool Win32Handle::operator==(const Win32Handle& other) const noexcept
+		{
+			return Handle == other.Handle;
+		}
+
+		bool Win32Handle::operator!=(const Win32Handle& other) const noexcept
+		{
+			return !(*this == other);
+		}
+
+		bool Win32Handle::operator==(void* other) const noexcept
+		{
+			return Handle == other;
+		}
+
+		bool Win32Handle::operator!=(void* other) const noexcept
+		{
+			return !(*this == other);
 		}
 
 		void Win32Handle::Release()
