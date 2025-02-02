@@ -49,26 +49,6 @@ namespace rapidio
 		view.CreateFileMappingHandle(size);
 		if (!view.m_fileMappingHandle.IsValid())
 		{
-			HMODULE hNtDll = LoadLibraryW(L"ntdll.dll");
-			if (!hNtDll) {
-				// Handle error
-				return std::nullopt;
-			}
-			typedef NTSTATUS(WINAPI* RtlGetLastNtStatusFn)();
-
-			// Get the function address
-			RtlGetLastNtStatusFn RtlGetLastNtStatus = (RtlGetLastNtStatusFn)GetProcAddress(hNtDll, "RtlGetLastNtStatus");
-			if (!RtlGetLastNtStatus) {
-				// Handle error
-				FreeLibrary(hNtDll);
-				return std::nullopt;
-			}
-
-			NTSTATUS status = RtlGetLastNtStatus();
-			std::cerr << "Error Code: " << status << "\n";
-
-			FreeLibrary(hNtDll);
-
 			return std::nullopt;
 		}
 
