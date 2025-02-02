@@ -50,9 +50,34 @@ namespace rapidio
 	class FileView final
 	{
 	public:
-		static std::optional<FileView> CreateViewFromExistingFile(const std::filesystem::path& filepath, const FileAccessMode accessMode,
-			const FileOpenMode openMode, const size_t size = 0);
+		/// <summary>
+		/// Creates a FileView object from an existing file on the filesystem.
+		/// </summary>
+		/// <param name="filepath">Path to the file to be mapped</param>
+		/// <param name="accessMode">Should the file be opened with ReadOnly or ReadWrite permissions?</param>
+		/// <param name="openMode">How should the file be opened? Only allowed values are OpenExisting or TruncateExisting</param>
+		/// <param name="fileMappingSize">How much of the file should be mapped? If set to 0, the entire file is mapped</param>
+		/// <param name="offset">Offset into the file to create the file mapping. Note that this must be a multiple of the system allocation granularity,
+		/// which can be retrieved by calling FileView::GetSystemAllocationGranularity().
+		/// This value will be automatically adjusted to fit the allocation granularity</param>
+		/// <returns>std::nullopt if the FileView could not be created. A valid optional of a FileView if the FileView was sucessfully created</returns>
+		static std::optional<FileView> CreateViewFromExistingFile(const std::filesystem::path& filepath, FileAccessMode accessMode,
+			FileOpenMode openMode, size_t fileMappingSize = 0, size_t offset = 0);
+
+		/// <summary>
+		/// Creates a FileView object for a non-existing file on the filesystem. 
+		/// !!! IMPORTANT !!! The file will be created on the filesystem with an initial size of 'expectedFileSize'
+		/// </summary>
+		/// <param name="filepath">Path to the file to be created and mapped</param>
+		/// <param name="expectedFileSize">Initial size of the file</param>
+		/// <returns>std::nullopt if the FileView could not be created. A valid optional of a FileView if the FileView was sucessfully created</returns>
 		static std::optional<FileView> CreateViewForNewFile(const std::filesystem::path& filepath, size_t expectedFileSize);
+
+		/// <summary>
+		/// Static function to get the system allocation granularity
+		/// </summary>
+		/// <returns>The system allocation granularity</returns>
+		static size_t GetSystemAllocationGranularity();
 
 		// Sets filepointer to a specific position		
 		bool Seek(size_t position);
@@ -95,7 +120,7 @@ namespace rapidio
 		bool GetFilesize();
 		void CreateFileMappingHandle(size_t size);
 		bool CreateNewFileMappingHandle(size_t size);
-		void CreateMapViewOfFile(size_t size);
+		void CreateMapViewOfFile(size_t size, size_t offset);
 		bool ReallocateFileMapping(size_t newSize);
 		bool ReallocateMappedViewOfFile(size_t newSize);
 
@@ -109,6 +134,7 @@ namespace rapidio
 		Win32Handle m_fileMappingHandle;
 		Win32Handle m_mappedViewHandle;
 		size_t m_fileMappingSize = 0;
+		size_t m_allocationGranularity;
 		#endif // _WIN32
 	};
 } // namespace rapidio

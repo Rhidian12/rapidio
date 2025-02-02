@@ -16,22 +16,26 @@
 
 namespace rapidio
 {
-	std::optional<FileView> FileView::CreateViewFromExistingFile(const std::filesystem::path& filepath, const FileAccessMode accessMode,
-		const FileOpenMode openMode, size_t size)
+	namespace detail
+	{
+		DWORD GetHighDWORD(size_t val)
+		{
+			return static_cast<DWORD>(static_cast<uint64_t>(val >> 32) & 0xFFFFFFFF);
+		}
+
+		DWORD GetLowDWORD(size_t val)
+		{
+			return static_cast<DWORD>(static_cast<uint64_t>(val) & 0xFFFFFFFF);
+		}
+	} // namespace detail
+
+	std::optional<FileView> FileView::CreateViewFromExistingFile(const std::filesystem::path& filepath, FileAccessMode accessMode,
+		FileOpenMode openMode, size_t fileMappingSize /* = 0 */, size_t offset /* = 0 */)
 	{
 		if (!PathUtils::DoesFileExist(filepath))
 		{
 			std::cerr << "FileView::CreateViewFromExistingFile > File must already exist!\n";
 			return std::nullopt;
-		}
-
-		// Don't allow any creation here
-		switch (openMode)
-		{
-			case FileOpenMode::CreateNew:
-			case FileOpenMode::CreateAlways:
-				std::cerr << "FileView::CreateViewFromExistingFile > Cannot create a file\n";
-				return std::nullopt;
 		}
 
 		FileView view(filepath.string(), accessMode);
@@ -46,13 +50,15 @@ namespace rapidio
 			return std::nullopt;
 		}
 
-		view.CreateFileMappingHandle(size);
+		view.m_allocationGranularity = view.GetSystemAllocationGranularity();
+
+		view.CreateFileMappingHandle(fileMappingSize);
 		if (!view.m_fileMappingHandle.IsValid())
 		{
 			return std::nullopt;
 		}
 
-		view.CreateMapViewOfFile(0);
+		view.CreateMapViewOfFile(0, offset);
 		if (!view.m_mappedViewHandle.IsValid())
 		{
 			return std::nullopt;
@@ -87,13 +93,15 @@ namespace rapidio
 			return std::nullopt;
 		}
 
+		view.m_allocationGranularity = view.GetSystemAllocationGranularity();
+
 		view.CreateFileMappingHandle(expectedFileSize);
 		if (!view.m_fileMappingHandle.IsValid())
 		{
 			return std::nullopt;
 		}
 
-		view.CreateMapViewOfFile(expectedFileSize);
+		view.CreateMapViewOfFile(expectedFileSize, 0);
 		if (!view.m_mappedViewHandle.IsValid())
 		{
 			return std::nullopt;
@@ -308,9 +316,6 @@ namespace rapidio
 			assert(size < m_filesize);
 		}
 
-		const DWORD hiWord = static_cast<DWORD>(static_cast<uint64_t>(size >> 32) & 0xFFFFFFFF);
-		const DWORD loWord = static_cast<DWORD>(static_cast<uint64_t>(size) & 0xFFFFFFFF);
-
 		m_fileMappingSize = size;
 
 		m_fileMappingHandle = CALL_WIN32_RV
@@ -320,8 +325,8 @@ namespace rapidio
 				static_cast<void*>(m_fileHandle),
 				nullptr,
 				m_accessMode == FileAccessMode::ReadOnly ? PAGE_READONLY : PAGE_READWRITE,
-				hiWord, // If 'size' is 0, we read the entire file
-				loWord,
+				detail::GetHighDWORD(size), // If 'size' is 0, we read the entire file
+				detail::GetLowDWORD(size),
 				"") // [TODO]: assign a name here to ensure we don't re-create file mappings
 		);
 	}
@@ -338,21 +343,18 @@ namespace rapidio
 				INVALID_HANDLE_VALUE,
 				nullptr,
 				PAGE_READWRITE,
-				HIWORD(size), // How big should our file be?
-				LOWORD(size), // How big should our file be?
+				detail::GetHighDWORD(size), // How big should our file be?
+				detail::GetLowDWORD(size), // How big should our file be?
 				"") // [TODO]: assign a name here to ensure we don't re-create file mappings
 		);
 
 		return m_fileMappingHandle != nullptr;
 	}
 
-	void FileView::CreateMapViewOfFile(size_t size)
+	void FileView::CreateMapViewOfFile(size_t size, size_t offset)
 	{
 		// File offset must be a multiple of system allocation granularity
-		// const DWORD FileMapViewOffset = FilepointerOffset / AllocationGranularity * AllocationGranularity;
-
-		// Get actual file mapping size
-		// DWORD FileMappingViewSize{ (FilepointerOffset % AllocationGranularity) + static_cast<DWORD>(BytesToRead) };
+		const size_t filemapViewOffset = offset / m_allocationGranularity * m_allocationGranularity;
 
 		if (size > m_filesize)
 		{
@@ -365,20 +367,19 @@ namespace rapidio
 			(
 				static_cast<void*>(m_fileMappingHandle),
 				m_accessMode == FileAccessMode::ReadOnly ? FILE_MAP_READ : FILE_MAP_WRITE,
-				0,
-				0,
+				detail::GetHighDWORD(filemapViewOffset),
+				detail::GetLowDWORD(filemapViewOffset),
 				size // 0 means it will create a view of the entire mapped file
 			)
 		), [](void* handle) { return CALL_WIN32_RV(UnmapViewOfFile(handle)) != 0; } };
 	}
 
-	//bool FileView::GetSystemAllocationGranularity()
-	//{
-	//	SYSTEM_INFO SystemInfo;
-	//	CALL_WIN32(GetNativeSystemInfo(&SystemInfo));
-	//	m_allocationGranularity = SystemInfo.dwAllocationGranularity;
-	//	return true;
-	//}
+	size_t FileView::GetSystemAllocationGranularity()
+	{
+		SYSTEM_INFO SystemInfo;
+		CALL_WIN32(GetNativeSystemInfo(&SystemInfo));
+		return SystemInfo.dwAllocationGranularity;
+	}
 
 	bool FileView::ReallocateFileMapping(size_t newSize)
 	{
@@ -393,7 +394,7 @@ namespace rapidio
 		m_fileMappingHandle.Release();
 
 		CreateFileMappingHandle(newSize);
-		CreateMapViewOfFile(0);
+		CreateMapViewOfFile(0, 0);
 
 		if (!(m_fileMappingHandle.IsValid() && m_mappedViewHandle.IsValid()))
 		{
@@ -413,7 +414,7 @@ namespace rapidio
 		}
 
 		m_mappedViewHandle.Release();
-		CreateMapViewOfFile(0);
+		CreateMapViewOfFile(0, 0);
 
 		if (!m_mappedViewHandle.IsValid())
 		{

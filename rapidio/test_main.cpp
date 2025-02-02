@@ -92,7 +92,7 @@ namespace
 
 		ASSERT_TRUE(View.Seek(0));
 		EXPECT_EQ(View.Read(666), "Hello World!");
-		
+
 		EXPECT_EQ(View.Read(0), "");
 
 		EXPECT_EQ(View.Read(15), "");
@@ -105,7 +105,7 @@ namespace
 		EXPECT_EQ(View.Read(SIMPLE_FILE_SIZE, false), "");
 
 		EXPECT_EQ(View.Read(5, false), "Hello");
-		
+
 		ASSERT_TRUE(View.Seek(2));
 		EXPECT_EQ(View.Read(3, false), "llo");
 
@@ -123,7 +123,7 @@ namespace
 	{
 		{
 			FileView View = FileView::CreateViewFromExistingFile(TmpDir / SIMPLE_FILE, FileAccessMode::ReadWrite, FileOpenMode::OpenExisting).value();
-	
+
 			EXPECT_TRUE(View.Write("More Data!"s, SIMPLE_FILE_SIZE));
 		}
 
@@ -302,5 +302,21 @@ namespace
 		std::ifstream File{ TmpDir / NON_EXISTING_FILE };
 		const std::string FileContents{ std::istreambuf_iterator<char>(File), std::istreambuf_iterator<char>() };
 		EXPECT_TRUE(FileContents == BigFileData);
+	}
+
+	TEST_F(RapidIOFixtureBigFile, TestFileMappingOffset)
+	{
+		const size_t allocationGranularity = FileView::GetSystemAllocationGranularity();
+		std::string data;
+		data.reserve(allocationGranularity);
+
+		{
+			FileView view = FileView::CreateViewFromExistingFile(TmpDir / BIG_FILE, FileAccessMode::ReadOnly, FileOpenMode::OpenExisting,
+				BIG_FILE_SIZE - allocationGranularity, allocationGranularity).value();
+
+			data = view.Read(allocationGranularity, false);
+		}
+
+		EXPECT_TRUE(BigFileData.substr(allocationGranularity, allocationGranularity) == data);
 	}
 }
