@@ -161,7 +161,8 @@ namespace rapidio
 		return std::string(static_cast<char*>(m_mappedViewHandle.Get()) + oldFilepointer, bytesToRead);
 	}
 
-	bool FileView::Write(const std::string& data, size_t offset /* = 0 */, bool autoGrowFile /* = true */, bool autoGrowFileMapping /* = true */)
+	template<IsBufferLike T>
+	bool FileView::Write(T&& data, size_t offset /* = 0 */, bool autoGrowFile /* = true */, bool autoGrowFileMapping /* = true */)
 	{
 		if (m_accessMode == FileAccessMode::ReadOnly)
 		{
@@ -204,7 +205,7 @@ namespace rapidio
 			}
 		}
 
-		std::memcpy(static_cast<char*>(m_mappedViewHandle.Get()) + offset, data.data(), data.size());
+		std::memcpy(static_cast<char*>(m_mappedViewHandle.Get()) + offset, static_cast<void*>(data.data()), data.size());
 		return true;
 	}
 

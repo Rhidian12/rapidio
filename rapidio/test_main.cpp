@@ -11,6 +11,7 @@
 namespace
 {
 	namespace fs = std::filesystem;
+	using namespace std::string_literals;
 
 	constexpr const char* SIMPLE_FILE = "SimpleFile.txt";
 	constexpr const char* NON_EXISTING_FILE = "NonExistingFile.txt";
@@ -115,7 +116,7 @@ namespace
 	TEST_F(RapidIOFixture, TestWriteToReadOnlyFile)
 	{
 		FileView View = FileView::CreateViewFromExistingFile(TmpDir / SIMPLE_FILE, FileAccessMode::ReadOnly, FileOpenMode::OpenExisting).value();
-		EXPECT_FALSE(View.Write("Some Random Data"));
+		EXPECT_FALSE(View.Write("Some Random Data"s));
 	}
 
 	TEST_F(RapidIOFixture, TestWriteToExistingSimpleFile)
@@ -123,7 +124,7 @@ namespace
 		{
 			FileView View = FileView::CreateViewFromExistingFile(TmpDir / SIMPLE_FILE, FileAccessMode::ReadWrite, FileOpenMode::OpenExisting).value();
 	
-			EXPECT_TRUE(View.Write("More Data!", SIMPLE_FILE_SIZE));
+			EXPECT_TRUE(View.Write("More Data!"s, SIMPLE_FILE_SIZE));
 		}
 
 		std::ifstream File{ TmpDir / SIMPLE_FILE };
@@ -136,7 +137,7 @@ namespace
 		{
 			FileView View = FileView::CreateViewFromExistingFile(TmpDir / SIMPLE_FILE, FileAccessMode::ReadWrite, FileOpenMode::OpenExisting, SIMPLE_FILE_SIZE / 2).value();
 
-			EXPECT_TRUE(View.Write("Boooo!", SIMPLE_FILE_SIZE / 2, false, true));
+			EXPECT_TRUE(View.Write("Boooo!"s, SIMPLE_FILE_SIZE / 2, false, true));
 		}
 
 		std::ifstream File{ TmpDir / SIMPLE_FILE };
@@ -149,7 +150,7 @@ namespace
 		{
 			FileView View = FileView::CreateViewFromExistingFile(TmpDir / SIMPLE_FILE, FileAccessMode::ReadWrite, FileOpenMode::OpenExisting).value();
 
-			EXPECT_TRUE(View.Write("More characters!", SIMPLE_FILE_SIZE, true, true));
+			EXPECT_TRUE(View.Write("More characters!"s, SIMPLE_FILE_SIZE, true, true));
 		}
 
 		std::ifstream File{ TmpDir / SIMPLE_FILE };
@@ -162,7 +163,7 @@ namespace
 		{
 			FileView View = FileView::CreateViewForNewFile(TmpDir / NON_EXISTING_FILE, SIMPLE_FILE_SIZE).value();
 
-			EXPECT_TRUE(View.Write("Hello World!", 0, false, false));
+			EXPECT_TRUE(View.Write("Hello World!"s, 0, false, false));
 		}
 
 		std::ifstream File{ TmpDir / NON_EXISTING_FILE };
@@ -175,7 +176,31 @@ namespace
 		{
 			FileView View = FileView::CreateViewForNewFile(TmpDir / NON_EXISTING_FILE, 6).value();
 
-			EXPECT_TRUE(View.Write("Hello World!"));
+			EXPECT_TRUE(View.Write("Hello World!"s));
+		}
+
+		std::ifstream File{ TmpDir / NON_EXISTING_FILE };
+		const std::string FileContents{ std::istreambuf_iterator<char>(File), std::istreambuf_iterator<char>() };
+		EXPECT_EQ(FileContents, "Hello World!");
+	}
+
+	TEST_F(RapidIOFixture, TestWriteCustomBuffer)
+	{
+		struct Buffer
+		{
+			std::string m_data = "Hello World!";
+
+			Buffer() : m_data{ "Hello World!" } {}
+			Buffer(char* buff, size_t buffSize) : m_data{ buff, buffSize } {}
+
+			size_t size() { return m_data.size(); }
+			char* data() { return m_data.data(); }
+		};
+
+		{
+			FileView View = FileView::CreateViewForNewFile(TmpDir / NON_EXISTING_FILE, SIMPLE_FILE_SIZE).value();
+
+			EXPECT_TRUE(View.Write(Buffer{}, 0, false, false));
 		}
 
 		std::ifstream File{ TmpDir / NON_EXISTING_FILE };
