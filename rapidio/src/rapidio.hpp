@@ -38,10 +38,28 @@ namespace rapidio
 			const FileOpenMode openMode, const size_t size = 0);
 		static std::optional<FileView> CreateViewForNewFile(const std::filesystem::path& filepath, size_t expectedFileSize);
 
+		// Sets filepointer to a specific position		
 		bool Seek(size_t position);
 
+		/// <summary>
+		/// Read bytes from the filepointer and return a std::string
+		/// </summary>
+		/// <param name="bytesToRead">Number of bytes to read</param>
+		/// <param name="autoGrowFileMapping">if set to true, will automatically re-allocate the filemapping if the read amount of bytes exceeds the mapped file size</param>
+		/// <returns>std::string containing read data</returns>
 		std::string Read(size_t bytesToRead, bool autoGrowFileMapping = true);
 
+		// 
+		// Will automatically re-allocate the filemapping if 
+
+		/// <summary>
+		/// Write a buffer to the mapped file at the provided offset.
+		/// </summary>
+		/// <param name="data">Buffer containing data to write to mapped file</param>
+		/// <param name="offset">Offset (from start of file) to write data to</param>
+		/// <param name="autoGrowFile">If set to true, will automatically increase filesize to required size to write data</param>
+		/// <param name="autoGrowFileMapping">If set to true, will automatically increase mapped file size to required size to write data</param>
+		/// <returns>Returns true upon successful writing of data</returns>
 		bool Write(const std::string& data, size_t offset = 0, bool autoGrowFile = true, bool autoGrowFileMapping = true);
 
 	private:
