@@ -2,8 +2,6 @@
 
 #ifdef _WIN32
 #	include "Win32Handle.hpp"
-
-#	include <Windows.h>
 #endif // _WIN32
 
 #include <filesystem>

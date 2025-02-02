@@ -5,7 +5,7 @@
 #include "Win32Call.hpp"
 #include "Win32Handle.hpp"
 
-#include <Windows.h>
+#include <fileapi.h>
 
 #include <filesystem>
 #include <functional>
