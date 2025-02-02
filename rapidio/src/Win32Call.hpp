@@ -5,6 +5,7 @@
 #include <string_view>
 #include <sstream>
 
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
 namespace rapidio
@@ -14,41 +15,41 @@ namespace rapidio
 		class Win32APICallInfo final
 		{
 		public:
-			Win32APICallInfo(const std::string_view File, const int32_t Line);
-			Win32APICallInfo(const std::string_view File, const int32_t Line, const DWORD ErrorToIgnore);
+			Win32APICallInfo(const std::string_view file, const int32_t line);
+			Win32APICallInfo(const std::string_view file, const int32_t line, const DWORD errorToIgnore);
 
 			bool GetSuccess() const;
 
 		private:
 			template<typename Func>
-			friend Win32APICallInfo Win32APICall(const Func& Function, const std::string_view File, const int32_t Line);
+			friend Win32APICallInfo Win32APICall(const Func& function, const std::string_view file, const int32_t line);
 			template<typename Func>
-			friend Win32APICallInfo Win32APICall_IgnoreError(const Func& Function, const DWORD ErrorToIgnore, const std::string_view File, const int32_t Line);
+			friend Win32APICallInfo Win32APICall_IgnoreError(const Func& function, const DWORD errorToIgnore, const std::string_view file, const int32_t line);
 			template<typename T, typename Func>
-			friend T Win32APICall_RV(const Func& Function, const std::string_view File, const int32_t Line);
+			friend T Win32APICall_RV(const Func& function, const std::string_view file, const int32_t line);
 			template<typename T, typename Func>
-			friend T Win32APICall_RV_IgnoreError(const Func& Function, const DWORD ErrorToIgnore, const std::string_view File, const int32_t Line);
+			friend T Win32APICall_RV_IgnoreError(const Func& function, const DWORD errorToIgnore, const std::string_view file, const int32_t line);
 
 			void LogError() const;
 
-			std::string_view File;
-			int32_t Line;
-			DWORD Result;
+			std::string_view m_file;
+			int32_t m_line;
+			DWORD m_result;
 		};
 
-		Win32APICallInfo::Win32APICallInfo(const std::string_view File, const int32_t Line)
-			: Win32APICallInfo(File, Line, 0)
+		Win32APICallInfo::Win32APICallInfo(const std::string_view file, const int32_t line)
+			: Win32APICallInfo(file, line, 0)
 		{}
 
-		Win32APICallInfo::Win32APICallInfo(const std::string_view InFile, const int32_t InLine, const DWORD ErrorToIgnore)
-			: Result{}
-			, File{ InFile }
-			, Line{ InLine }
+		Win32APICallInfo::Win32APICallInfo(const std::string_view file, const int32_t line, const DWORD errorToIgnore)
+			: m_result{}
+			, m_file{ file }
+			, m_line{ line }
 		{
-			const DWORD Error{ GetLastError() };
-			if (Error != ErrorToIgnore)
+			const DWORD error{ GetLastError() };
+			if (error != errorToIgnore)
 			{
-				Result = Error;
+				m_result = error;
 			}
 
 			SetLastError(ERROR_SUCCESS);
@@ -56,7 +57,7 @@ namespace rapidio
 
 		bool Win32APICallInfo::GetSuccess() const
 		{
-			return Result == ERROR_SUCCESS;
+			return m_result == ERROR_SUCCESS;
 		}
 
 		void Win32APICallInfo::LogError() const
@@ -66,78 +67,78 @@ namespace rapidio
 				return;
 			}
 
-			char* Buffer{};
-			FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, Result, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char*)&Buffer, 0, nullptr);
-			std::ostringstream Stream;
-			Stream << "[" << File << ", " << Line << "] Win32 API Call Error: " << Buffer << "\n";
-			LocalFree(Buffer); // make sure to free the buffer
+			char* buffer{};
+			FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, m_result, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char*)&buffer, 0, nullptr);
+			std::ostringstream stream;
+			stream << "[" << m_file << ", " << m_line << "] Win32 API Call Error: " << buffer << "\n";
+			LocalFree(buffer); // make sure to free the buffer
 
-			std::cerr << Stream.str();
+			std::cerr << stream.str();
 		}
 
 		template<typename Func>
-		Win32APICallInfo Win32APICall(const Func& Function, const std::string_view File, const int32_t Line)
+		Win32APICallInfo Win32APICall(const Func& function, const std::string_view file, const int32_t line)
 		{
-			Function();
-			const Win32APICallInfo CallInfo{ File, Line };
+			function();
+			const Win32APICallInfo callInfo{ file, line };
 
-			if (!CallInfo.GetSuccess())
+			if (!callInfo.GetSuccess())
 			{
-				CallInfo.LogError();
+				callInfo.LogError();
 			}
 
-			return CallInfo;
+			return callInfo;
 		}
 
 		template<typename Func>
-		Win32APICallInfo Win32APICall_IgnoreError(const Func& Function, const DWORD ErrorToIgnore, const std::string_view File, const int32_t Line)
+		Win32APICallInfo Win32APICall_IgnoreError(const Func& function, const DWORD errorToIgnore, const std::string_view file, const int32_t line)
 		{
-			Function();
-			const Win32APICallInfo CallInfo{ File, Line, ErrorToIgnore };
+			function();
+			const Win32APICallInfo callInfo{ file, line, errorToIgnore };
 
-			if (!CallInfo.GetSuccess())
+			if (!callInfo.GetSuccess())
 			{
-				CallInfo.LogError();
+				callInfo.LogError();
 			}
 
-			return CallInfo;
+			return callInfo;
 		}
 
 		template<typename T, typename Func>
-		T Win32APICall_RV(const Func& Function, const std::string_view File, const int32_t Line)
+		T Win32APICall_RV(const Func& function, const std::string_view file, const int32_t line)
 		{
-			const T Result = Function();
-			const Win32APICallInfo CallInfo{ File, Line };
+			const T result = function();
+			const Win32APICallInfo callInfo{ file, line };
 
-			if (!CallInfo.GetSuccess())
+			if (!callInfo.GetSuccess())
 			{
-				CallInfo.LogError();
+				callInfo.LogError();
 			}
 
-			return Result;
+			return result;
 		}
 
 		template<typename T, typename Func>
-		T Win32APICall_RV_IgnoreError(const Func& Function, const DWORD ErrorToIgnore, const std::string_view File, const int32_t Line)
+		T Win32APICall_RV_IgnoreError(const Func& function, const DWORD errorToIgnore, const std::string_view file, const int32_t line)
 		{
-			const T Result = Function();
-			const Win32APICallInfo CallInfo{ File, Line, ErrorToIgnore };
+			const T result = function();
+			const Win32APICallInfo callInfo{ file, line, errorToIgnore };
 
-			if (!CallInfo.GetSuccess())
+			if (!callInfo.GetSuccess())
 			{
-				CallInfo.LogError();
+				callInfo.LogError();
 			}
 
-			return Result;
+			return result;
 		}
 	}
 }
 
 #ifdef _WIN32
-#	define CALL_WIN32(FunctionCall) rapidio::Win32Utils::Win32APICall([&](){ return FunctionCall; }, __FILE__, __LINE__)
-#	define CALL_WIN32_IGNORE_ERROR(FunctionCall, ErrorToIgnore) rapidio::Win32Utils::Win32APICall_IgnoreError([&](){ return FunctionCall; }, ErrorToIgnore, __FILE__, __LINE__)
-#	define CALL_WIN32_RV(FunctionCall) rapidio::Win32Utils::Win32APICall_RV<decltype(FunctionCall)>([&](){ return FunctionCall; }, __FILE__, __LINE__)
-#	define CALL_WIN32_RV_IGNORE_ERROR(FunctionCall, ErrorToIgnore) rapidio::Win32Utils::Win32APICall_RV_IgnoreError<decltype(FunctionCall)>([&](){ return FunctionCall; }, ErrorToIgnore, __FILE__, __LINE__)
+#	define CALL_WIN32(functionCall) rapidio::Win32Utils::Win32APICall([&](){ return functionCall; }, __FILE__, __LINE__)
+#	define CALL_WIN32_IGNORE_ERROR(functionCall, errorToIgnore) rapidio::Win32Utils::Win32APICall_IgnoreError([&](){ return functionCall; }, errorToIgnore, __FILE__, __LINE__)
+#	define CALL_WIN32_RV(functionCall) rapidio::Win32Utils::Win32APICall_RV<decltype(functionCall)>([&](){ return functionCall; }, __FILE__, __LINE__)
+#	define CALL_WIN32_RV_IGNORE_ERROR(functionCall, errorToIgnore) rapidio::Win32Utils::Win32APICall_RV_IgnoreError<decltype(functionCall)>([&](){ return functionCall; }, errorToIgnore, __FILE__, __LINE__)
 #endif	
 
 #endif // _WIN32
