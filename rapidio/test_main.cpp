@@ -191,10 +191,11 @@ namespace
 			std::string m_data = "Hello World!";
 
 			Buffer() : m_data{ "Hello World!" } {}
-			Buffer(char* buff, size_t buffSize) : m_data{ buff, buffSize } {}
 
 			size_t size() { return m_data.size(); }
 			char* data() { return m_data.data(); }
+
+			void assign(const char* data, size_t size) { m_data.assign(data, size); }
 		};
 
 		{
@@ -206,6 +207,31 @@ namespace
 		std::ifstream File{ TmpDir / NON_EXISTING_FILE };
 		const std::string FileContents{ std::istreambuf_iterator<char>(File), std::istreambuf_iterator<char>() };
 		EXPECT_EQ(FileContents, "Hello World!");
+	}
+
+	TEST_F(RapidIOFixture, TestReadCustomBuffer)
+	{
+		struct Buffer
+		{
+			std::string m_data;
+
+			Buffer() : m_data{} {}
+
+			size_t size() { return m_data.size(); }
+			char* data() { return m_data.data(); }
+
+			void assign(const char* data, size_t size) { m_data.assign(data, size); }
+		};
+
+		Buffer buffer;
+
+		{
+			FileView View = FileView::CreateViewFromExistingFile(TmpDir / SIMPLE_FILE, FileAccessMode::ReadOnly, FileOpenMode::OpenExisting).value();
+
+			EXPECT_TRUE(View.Read(buffer, SIMPLE_FILE_SIZE));
+		}
+
+		EXPECT_EQ(buffer.m_data, "Hello World!");
 	}
 
 	TEST_F(RapidIOFixtureBigFile, TestReadBigFileInBlocks)

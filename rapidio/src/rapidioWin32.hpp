@@ -122,10 +122,19 @@ namespace rapidio
 
 	std::string FileView::Read(size_t bytesToRead, bool autoGrowFileMapping /* = true */)
 	{
+		std::string temp;
+		temp.reserve(bytesToRead);
+		Read(temp, bytesToRead, autoGrowFileMapping);
+		return temp;
+	}
+
+	template<IsBufferLike T>
+	bool FileView::Read(T& buffer, size_t bytesToRead, bool autoGrowFileMapping /* = true */)
+	{
 		// Are we at EOF?
 		if (m_filepointer >= m_filesize)
 		{
-			return "";
+			return false;
 		}
 
 		// If we're not at EOF, but reading 'BytesToRead' would push us past EOF, adjust 'BytesToRead' until we hit EOF
@@ -141,7 +150,7 @@ namespace rapidio
 			if (!autoGrowFileMapping)
 			{
 				std::cerr << "FileView::Read > Reading " << bytesToRead << "  would read past Mapped View!\n";
-				return "";
+				return false;
 			}
 			else
 			{
@@ -158,7 +167,8 @@ namespace rapidio
 
 		const size_t oldFilepointer = m_filepointer;
 		m_filepointer += bytesToRead;
-		return std::string(static_cast<char*>(m_mappedViewHandle.Get()) + oldFilepointer, bytesToRead);
+		buffer.assign(static_cast<char*>(m_mappedViewHandle.Get()) + oldFilepointer, bytesToRead);
+		return true;
 	}
 
 	template<IsBufferLike T>
@@ -205,7 +215,7 @@ namespace rapidio
 			}
 		}
 
-		std::memcpy(static_cast<char*>(m_mappedViewHandle.Get()) + offset, static_cast<void*>(data.data()), data.size());
+		std::memcpy(static_cast<char*>(m_mappedViewHandle.Get()) + offset, static_cast<const void*>(data.data()), data.size());
 		return true;
 	}
 
